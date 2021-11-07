@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -10,6 +11,9 @@ namespace commonItems.Serialization {
 	public static class PDXSerializer {
 		private static readonly CultureInfo cultureInfo = CultureInfo.InvariantCulture;
 
+		public static string Serialize(object obj) {
+			return Serialize(obj, string.Empty);
+		}
 		public static string Serialize(object obj, string indent) {
 			return Serialize(obj, indent, true);
 		}
@@ -36,9 +40,6 @@ namespace commonItems.Serialization {
 			}
 
 			return sb.ToString();
-		}
-		public static string Serialize(object obj) {
-			return Serialize(obj, string.Empty);
 		}
 
 		private static void SerializeEnumerable(IEnumerable enumerable, bool withBraces, StringBuilder sb, string indent) {
@@ -100,6 +101,38 @@ namespace commonItems.Serialization {
 		private static bool IsKeyValuePair(object obj) {
 			Type type = obj.GetType();
 			return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
+		}
+
+		private static object Deserialize<T>(BufferedReader reader) {
+			if (typeof(T) == typeof(string)) {
+				return ParserHelpers.GetString(reader);
+			} else if (IsAssignableFrom<int, T>()) {
+				return ParserHelpers.GetInt(reader);
+			} else if (IsAssignableFrom<ulong, T>()) {
+				return ParserHelpers.GetULong(reader);
+			} else if (IsAssignableFrom<double, T>()) {
+				return ParserHelpers.GetDouble(reader);
+			}
+			
+			// else if (typeof(IDictionary).GetTypeInfo().IsAssignableFrom(typeof(T).GetTypeInfo())) {
+
+			//}
+			else if (IsAssignableFrom<IEnumerable<string>, T>()) {
+				return ParserHelpers.GetStrings(reader);
+			} else if (IsAssignableFrom<IEnumerable<int>, T>()) {
+				return ParserHelpers.GetInts(reader);
+			} else if (IsAssignableFrom<IEnumerable<ulong>, T>()) {
+				return ParserHelpers.GetULongs(reader);
+			} else if (IsAssignableFrom<IEnumerable<double>, T>()) {
+				return ParserHelpers.GetDoubles(reader);
+			} else {
+				throw new SerializationException($"Objects of type {typeof(T)} can not yet be deserialized by PDXSerializer!");
+			}
+		}
+
+		// returns whether X is assignable from Y
+		private static bool IsAssignableFrom<TX, TY>() {
+			return typeof(TX).GetTypeInfo().IsAssignableFrom(typeof(TY).GetTypeInfo());
 		}
 	}
 }
