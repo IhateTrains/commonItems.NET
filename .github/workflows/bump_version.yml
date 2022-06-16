@@ -1,0 +1,39 @@
+name: Bump package version
+on:
+  push:
+    branches:
+    - 'main'
+
+jobs:
+  bump_package_version:
+    name: "Bump package version"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: '0'
+        token: ${{ secrets.API_TOKEN_GITHUB }}
+
+    - name: "Get new version"
+      id: get_new_version
+      uses: anothrNick/github-tag-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.API_TOKEN_GITHUB }}
+        DEFAULT_BUMP: none
+        WITH_V: false
+        DRY_RUN: true
+
+    - name: "Update version in project"
+      uses: jacobtomlinson/gha-find-replace@v2
+      if: ${{ steps.get_new_version.outputs.new_tag }}
+      with:
+        include: commonItems/commonItems.csproj
+        find: <Version>${{ steps.get_new_version.outputs.tag }}</Version>
+        replace: <Version>${{ steps.get_new_version.outputs.new_tag }}</Version>
+        regex: false
+
+    - name: "Push changes"
+      uses: EndBug/add-and-commit@v9
+      if: ${{ steps.get_new_version.outputs.new_tag }}
+      with:
+        default_author: github_actions
