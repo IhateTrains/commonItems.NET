@@ -24,7 +24,7 @@ jobs:
         DRY_RUN: true
 
     - name: "Update version in project"
-      uses: jacobtomlinson/gha-find-replace@v2
+      uses: jacobtomlinson/gha-find-replace@v3
       with:
         include: commonItems/commonItems.csproj
         find: <Version>${{ steps.get_new_version.outputs.tag }}</Version>
